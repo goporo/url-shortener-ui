@@ -6,6 +6,7 @@ import api from "~/axios/axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCopy } from "@fortawesome/free-solid-svg-icons";
 import { formatDistanceToNow } from "date-fns";
+import Footer from "~/components/footer";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -130,6 +131,9 @@ export default function App() {
           )}
         </div>
       </div>
+
+      <div className="flex-grow"></div>
+      <Footer />
     </div>
   );
 }
