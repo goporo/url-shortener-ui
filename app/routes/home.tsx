@@ -62,9 +62,14 @@ export default function App() {
     setLoading(false);
   };
 
-  const copyToClipboard = (shortUrl: string) => {
-    navigator.clipboard.writeText(shortUrl);
-    toast.info("Copied to clipboard!");
+  const copyToClipboard = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.info("Copied to clipboard!");
+    } catch (err) {
+      console.error("Failed to copy:", err);
+      toast.error("Failed to copy to clipboard. Please try again.");
+    }
   };
 
   return (
@@ -156,7 +161,11 @@ const ShortenURLCard = ({
         </span>
 
         <button
-          onClick={() => copyToClipboard(shortUrl.shortCode)}
+          onClick={() =>
+            copyToClipboard(
+              `${import.meta.env.VITE_SERVICE_URL}/urls/${shortUrl.shortCode}`
+            )
+          }
           className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition"
         >
           <FontAwesomeIcon icon={faCopy} className="text-gray-600 text-lg" />
