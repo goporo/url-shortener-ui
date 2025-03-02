@@ -18,7 +18,6 @@ export default function RedirectPage() {
     const fetchOriginalUrl = async () => {
       try {
         await api.get(`/urls/${shortCode}`);
-        // Assuming the backend handles the redirection
       } catch (error) {
         setError(true);
         toast.error("Failed to redirect. The URL may be invalid or expired.");
