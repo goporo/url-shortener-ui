@@ -1,100 +1,184 @@
-# Welcome to React Router!
+# URL Shortener Service
 
-A modern, production-ready template for building full-stack React applications using React Router.
-
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+A robust URL shortener service built with Golang that converts long URLs into short, easy-to-share links. The service includes rate limiting, usage statistics tracking, and a RESTful API.
 
 ## Features
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+- **URL Shortening**: Convert long URLs to short codes using base62 encoding
+- **Rate Limiting**: Prevents API abuse with configurable request limits
+- **Usage Statistics**: Track clicks, referrers, and other metrics for each shortened URL
+- **RESTful API**: Complete API for managing shortened URLs
+- **Persistence**: Data stored in a database for reliability
 
-## Getting Started
+## API Endpoints
 
-### Installation
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET    | `/urls` | Retrieve all shortened URLs |
+| POST   | `/urls` | Create a new shortened URL |
+| GET    | `/urls/:shortCode` | Redirect to the original URL |
+| PUT    | `/urls/:shortCode` | Update an existing shortened URL |
+| DELETE | `/urls/:shortCode` | Delete a shortened URL |
+| GET    | `/urls/:shortCode/stats` | Get usage statistics for a specific URL |
 
-Install the dependencies:
+## How It Works
+
+### URL Shortening Process
+
+The service uses base62 encoding (a-z, A-Z, 0-9) to generate short codes for URLs. This approach allows for:
+- Creating shorter URLs than with hexadecimal encoding
+- Generating up to 62^n unique URLs where n is the length of the short code
+- Avoiding confusing characters like 'O' and '0'
+
+### Rate Limiting
+
+To prevent abuse, the service implements rate limiting on API requests:
+- Configurable limits by IP address or API key
+- Sliding window algorithm for fair usage calculation
+- Clear rate limit headers in API responses
+
+### Usage Statistics
+
+For each shortened URL, the service tracks:
+- Total clicks
+- Unique visitors
+- Referrer sources
+- Geographic data
+- Browser/device information
+- Timestamp of visits
+
+## API Usage Examples
+
+### Create a Shortened URL
 
 ```bash
-npm install
+curl -X POST http://localhost:8080/urls \
+  -H "Content-Type: application/json" \
+  -d '{"original_url": "https://example.com/very/long/url/that/needs/shortening"}'
 ```
 
-### Development
+Response:
+```json
+{
+  "original_url": "https://example.com/very/long/url/that/needs/shortening",
+  "short_code": "aBc123",
+  "short_url": "http://localhost:8080/urls/aBc123",
+  "created_at": "2023-05-20T15:30:45Z"
+}
+```
 
-Start the development server with HMR:
+### Get Statistics for a URL
 
 ```bash
-npm run dev
+curl -X GET http://localhost:8080/urls/aBc123/stats
 ```
 
-Your application will be available at `http://localhost:5173`.
+Response:
+```json
+{
+  "short_code": "aBc123",
+  "original_url": "https://example.com/very/long/url/that/needs/shortening",
+  "created_at": "2023-05-20T15:30:45Z",
+  "stats": {
+    "total_clicks": 42,
+    "unique_visitors": 24,
+    "referrers": {
+      "google.com": 15,
+      "twitter.com": 12,
+      "direct": 15
+    },
+    "daily_clicks": [
+      {"date": "2023-05-20", "clicks": 10},
+      {"date": "2023-05-21", "clicks": 32}
+    ]
+  }
+}
+```
 
-## Building for Production
+## Installation
 
-Create a production build:
+### Prerequisites
+
+- Go 1.16 or higher
+- Database (PostgreSQL, MySQL, or Redis)
+- Docker (optional)
+
+### Local Setup
+
+1. Clone the repository:
+   ```
+   git clone https://github.com/yourusername/url-shortener.git
+   cd url-shortener
+   ```
+
+2. Install dependencies:
+   ```
+   go mod download
+   ```
+
+3. Configure the application (edit config.yaml or use environment variables)
+
+4. Run the application:
+   ```
+   go run main.go
+   ```
+
+### Docker Setup
 
 ```bash
-npm run build
+docker build -t url-shortener .
+docker run -p 8080:8080 url-shortener
 ```
 
-## Deployment
+## Configuration
 
-### Docker Deployment
+The service can be configured via environment variables or a config file:
 
-This template includes three Dockerfiles optimized for different package managers:
+```yaml
+server:
+  port: 8080
+  host: "localhost"
 
-- `Dockerfile` - for npm
-- `Dockerfile.pnpm` - for pnpm
-- `Dockerfile.bun` - for bun
+database:
+  type: "postgres"
+  connection: "postgresql://user:password@localhost:5432/urlshortener"
 
-To build and run using Docker:
+ratelimit:
+  requests: 100
+  period: "1h"
 
-```bash
-# For npm
-docker build -t my-app .
-
-# For pnpm
-docker build -f Dockerfile.pnpm -t my-app .
-
-# For bun
-docker build -f Dockerfile.bun -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
+shortcode:
+  length: 6
 ```
 
-The containerized application can be deployed to any platform that supports Docker, including:
+## Implementation Details
 
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
+### Base62 Encoding
 
-### DIY Deployment
-
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
+The URL shortening service uses base62 encoding to generate compact short codes. The implementation converts a numeric ID to a character string using the following character set:
 
 ```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
+0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
 ```
 
-## Styling
+Here's a simplified example of the encoding function:
 
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
+```go
+func base62Encode(number uint64) string {
+    const base = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+    length := uint64(len(base))
+    var encodedBuilder strings.Builder
+    
+    for number > 0 {
+        encodedBuilder.WriteByte(base[number%length])
+        number = number / length
+    }
+    
+    encoded := encodedBuilder.String()
+    return reverse(encoded)
+}
+```
 
----
+## License
 
-Built with ❤️ using React Router.
+This project is licensed under the MIT License - see the LICENSE file for details.
